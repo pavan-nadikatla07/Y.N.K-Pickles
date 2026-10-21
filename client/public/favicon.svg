@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="lidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3A6B36" />
+      <stop offset="100%" stop-color="#193415" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded canvas -->
+  <rect width="512" height="512" rx="112" fill="#FDFBF7" />
+
+  <!-- Outer Glow circle -->
+  <circle cx="256" cy="260" r="190" fill="#FEF3C7" opacity="0.6" />
+
+  <!-- Traditional Ceramic Pickle Jar (Bharani) -->
+  <g filter="url(#shadow)">
+    <!-- Jar Body Bottom (Earthenware base) -->
+    <path d="M140 230 C130 330 150 410 256 410 C362 410 382 330 372 230 Z" fill="url(#bgGrad)" />
+
+    <!-- Jar Shoulder (Glazed Cream Top) -->
+    <path d="M165 170 C140 185 140 230 140 230 L372 230 C372 230 372 185 347 170 Z" fill="#FAF6ED" />
+
+    <!-- Jar Neck -->
+    <rect x="180" y="145" width="152" height="26" rx="8" fill="#EAE0D0" />
+
+    <!-- Ceramic Lid with Cloth Tie -->
+    <path d="M160 148 C160 120 210 100 256 100 C302 100 352 120 352 148 Z" fill="url(#lidGrad)" />
+    <!-- Lid Knob -->
+    <circle cx="256" cy="94" r="18" fill="#FBBF24" />
+
+    <!-- Traditional Jute Tie String -->
+    <path d="M170 155 Q256 168 342 155" stroke="#92400E" stroke-width="5" fill="none" stroke-linecap="round" />
+  </g>
+
+  <!-- YNK Brand Badge -->
+  <rect x="186" y="270" width="140" height="48" rx="10" fill="#FFFFFF" opacity="0.95" />
+  <text x="256" y="304" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="#78350F" text-anchor="middle" letter-spacing="3">YNK</text>
+  <text x="256" y="360" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="#FAF6ED" text-anchor="middle" letter-spacing="5">PICKLES</text>
+</svg>
