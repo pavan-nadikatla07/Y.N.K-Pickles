@@ -45,8 +45,8 @@ const productSchema = new mongoose.Schema(
     },
     priceBasisUnit: {
       type: String,
-      enum: ['kg', 'g', 'piece', '100g', '250g', '500g', '1kg'],
-      default: 'kg'
+      trim: true,
+      default: '1kg'
     },
     stockQuantity: {
       type: Number,
@@ -56,12 +56,12 @@ const productSchema = new mongoose.Schema(
     },
     minPurchaseQty: {
       type: Number,
-      min: [1, 'Minimum purchase quantity must be at least 1'],
+      min: [0.001, 'Minimum purchase quantity must be positive'],
       default: 1
     },
     purchaseIncrement: {
       type: Number,
-      min: [1, 'Purchase increment must be at least 1'],
+      min: [0.001, 'Purchase increment must be positive'],
       default: 1
     },
     isActive: {

@@ -35,8 +35,20 @@ export const AuthProvider = ({ children }) => {
     throw new Error(data.message || 'Login failed');
   };
 
-  const register = async (name, phone, password, confirmPassword) => {
-    const data = await api.register({ name, phone, password, confirmPassword });
+  const register = async (nameOrPayload, phone, password, confirmPassword, extra = {}) => {
+    let payload = {};
+    if (typeof nameOrPayload === 'object' && nameOrPayload !== null) {
+      payload = nameOrPayload;
+    } else {
+      payload = {
+        name: nameOrPayload,
+        phone,
+        password,
+        confirmPassword,
+        ...extra
+      };
+    }
+    const data = await api.register(payload);
     if (data.success && data.user) {
       setUser(data.user);
       return data.user;

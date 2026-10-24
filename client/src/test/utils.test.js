@@ -126,4 +126,48 @@ describe('WhatsApp Message Generation & URL Encoding', () => {
     expect(url).not.toContain(' ');
     expect(url).not.toContain('-');
   });
+
+  it('builds WhatsApp message with FREE DELIVERY inside Tanuku Circle', () => {
+    const message = buildWhatsAppOrderMessage({
+      customer,
+      items,
+      subtotal: 475,
+      logistics: {
+        isInside: true,
+        circleName: 'Tanuku Circle',
+        distanceKm: 0,
+        ratePerKm: 10,
+        logisticsCharge: 0
+      },
+      finalTotal: 475,
+      locationLink: 'https://www.google.com/maps?q=16.7529,81.6760'
+    });
+
+    expect(message).toContain('Items Subtotal: ₹475');
+    expect(message).toContain('Delivery / Logistics: FREE DELIVERY (Inside Tanuku Circle)');
+    expect(message).toContain('FINAL TOTAL: ₹475');
+    expect(message).toContain('TOTAL: ₹475');
+  });
+
+  it('builds WhatsApp message with outside Tanuku Circle road distance and ₹10/km logistics charge', () => {
+    const message = buildWhatsAppOrderMessage({
+      customer,
+      items,
+      subtotal: 475,
+      logistics: {
+        isInside: false,
+        circleName: 'Tanuku Circle',
+        distanceKm: 9.2,
+        ratePerKm: 10,
+        logisticsCharge: 92
+      },
+      finalTotal: 567, // 475 + 92 = 567
+      locationLink: 'https://www.google.com/maps?q=16.8152,81.5284'
+    });
+
+    expect(message).toContain('Items Subtotal: ₹475');
+    expect(message).toContain('Delivery / Logistics: ₹92 (9.2 km road distance outside Tanuku Circle @ ₹10/km)');
+    expect(message).toContain('FINAL TOTAL: ₹567');
+    expect(message).toContain('TOTAL: ₹567');
+  });
 });

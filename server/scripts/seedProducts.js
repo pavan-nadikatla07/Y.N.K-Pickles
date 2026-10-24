@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import mongoose from 'mongoose';
+import { connectDB, disconnectDB } from '../config/db.js';
 import { Product } from '../models/Product.js';
 
 const initialProducts = [
@@ -110,9 +110,7 @@ const initialProducts = [
 ];
 
 const seedProducts = async () => {
-  const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ynk_pickles';
-  await mongoose.connect(mongoURI);
-  console.log('[Seed] Connected to MongoDB for products');
+  await connectDB();
 
   for (const item of initialProducts) {
     const existing = await Product.findOne({ slug: item.slug });
@@ -125,7 +123,7 @@ const seedProducts = async () => {
   }
 
   console.log('[Seed] Products seeding completed successfully.');
-  await mongoose.disconnect();
+  await disconnectDB();
   process.exit(0);
 };
 

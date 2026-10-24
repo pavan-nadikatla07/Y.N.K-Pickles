@@ -12,6 +12,8 @@ import { CartPage } from './pages/customer/CartPage.jsx';
 import { CheckoutPage } from './pages/customer/CheckoutPage.jsx';
 import { LoginPage } from './pages/auth/LoginPage.jsx';
 import { RegisterPage } from './pages/auth/RegisterPage.jsx';
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage.jsx';
+import { CustomerProfilePage } from './pages/customer/CustomerProfilePage.jsx';
 
 // Admin Layout & Pages
 import { AdminLayout } from './components/layout/AdminLayout.jsx';
@@ -21,6 +23,8 @@ import { AdminProductsPage } from './pages/admin/AdminProductsPage.jsx';
 import { AdminProductFormPage } from './pages/admin/AdminProductFormPage.jsx';
 import { AdminStockPage } from './pages/admin/AdminStockPage.jsx';
 import { AdminWhatsAppPage } from './pages/admin/AdminWhatsAppPage.jsx';
+import { AdminEmailSettingsPage } from './pages/admin/AdminEmailSettingsPage.jsx';
+import { AdminProfilePage } from './pages/admin/AdminProfilePage.jsx';
 
 /**
  * Route guard: Requires authenticated customer or admin
@@ -128,9 +132,38 @@ export default function App() {
           </CustomerWrapper>
         }
       />
+      <Route
+        path="/forgot-password"
+        element={
+          <CustomerWrapper>
+            <ForgotPasswordPage />
+          </CustomerWrapper>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <CustomerWrapper>
+            <ProtectedCustomerRoute>
+              <CustomerProfilePage />
+            </ProtectedCustomerRoute>
+          </CustomerWrapper>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <CustomerWrapper>
+            <ProtectedCustomerRoute>
+              <CustomerProfilePage />
+            </ProtectedCustomerRoute>
+          </CustomerWrapper>
+        }
+      />
 
-      {/* Admin Portal Login (Separate route, hidden from customers) */}
+      {/* Admin Portal Login & Password Recovery */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin/forgot-password" element={<ForgotPasswordPage />} />
 
       {/* Protected Admin Portal with Sidebar */}
       <Route
@@ -148,6 +181,8 @@ export default function App() {
         <Route path="products/:id/edit" element={<AdminProductFormPage />} />
         <Route path="stock" element={<AdminStockPage />} />
         <Route path="settings/whatsapp" element={<AdminWhatsAppPage />} />
+        <Route path="settings/email" element={<AdminEmailSettingsPage />} />
+        <Route path="profile" element={<AdminProfilePage />} />
       </Route>
 
       {/* Fallback 404 route */}

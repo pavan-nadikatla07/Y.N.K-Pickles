@@ -87,6 +87,29 @@ export const getAllProductsAdmin = async (req, res, next) => {
 };
 
 /**
+ * Admin: Get single product by ID (regardless of active status)
+ */
+export const getProductByIdAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      product
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Admin: Create a new product
  */
 export const createProduct = async (req, res, next) => {
@@ -239,15 +262,18 @@ export const updateProduct = async (req, res, next) => {
       product.measurementUnit = measurementUnit;
     }
 
-    if (price !== undefined) {
+    if (price !== undefined && price !== null && price !== '') {
       const parsedPrice = parseFloat(price);
       if (isNaN(parsedPrice) || parsedPrice < 0) {
-        return res.status(400).json({ success: false, message: 'Price cannot be negative.' });
+        return res.status(400).json({ success: false, message: 'Price cannot be negative or invalid.' });
+      }
+      if (parsedPrice === 0) {
+        return res.status(400).json({ success: false, message: 'Price must be greater than 0.' });
       }
       product.price = parsedPrice;
     }
 
-    if (priceBasis !== undefined) {
+    if (priceBasis !== undefined && priceBasis !== null && priceBasis !== '') {
       const parsedBasis = parseFloat(priceBasis);
       if (isNaN(parsedBasis) || parsedBasis <= 0) {
         return res.status(400).json({ success: false, message: 'Price basis must be > 0.' });
@@ -255,11 +281,11 @@ export const updateProduct = async (req, res, next) => {
       product.priceBasis = parsedBasis;
     }
 
-    if (priceBasisUnit) {
-      product.priceBasisUnit = priceBasisUnit;
+    if (priceBasisUnit && typeof priceBasisUnit === 'string' && priceBasisUnit.trim()) {
+      product.priceBasisUnit = priceBasisUnit.trim();
     }
 
-    if (stockQuantity !== undefined) {
+    if (stockQuantity !== undefined && stockQuantity !== null && stockQuantity !== '') {
       const parsedStock = parseFloat(stockQuantity);
       if (isNaN(parsedStock) || parsedStock < 0) {
         return res.status(400).json({ success: false, message: 'Stock cannot be negative.' });
@@ -268,11 +294,11 @@ export const updateProduct = async (req, res, next) => {
       product.isStockAvailable = parsedStock > 0;
     }
 
-    if (minPurchaseQty !== undefined) {
+    if (minPurchaseQty !== undefined && minPurchaseQty !== null && minPurchaseQty !== '') {
       product.minPurchaseQty = Math.max(1, parseFloat(minPurchaseQty) || 1);
     }
 
-    if (purchaseIncrement !== undefined) {
+    if (purchaseIncrement !== undefined && purchaseIncrement !== null && purchaseIncrement !== '') {
       product.purchaseIncrement = Math.max(1, parseFloat(purchaseIncrement) || 1);
     }
 
@@ -303,6 +329,60 @@ export const updateProduct = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Product updated successfully.',
+      product
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Admin: Update product price directly (atomic operation)
+ */
+export const updateProductPrice = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { price, priceBasis, priceBasisUnit } = req.body;
+
+    if (price === undefined || price === null || price === '') {
+      return res.status(400).json({ success: false, message: 'Price is required.' });
+    }
+
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      return res.status(400).json({ success: false, message: 'Price cannot be negative or invalid.' });
+    }
+    if (parsedPrice === 0) {
+      return res.status(400).json({ success: false, message: 'Price must be greater than 0.' });
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found.'
+      });
+    }
+
+    product.price = parsedPrice;
+
+    if (priceBasis !== undefined && priceBasis !== null && priceBasis !== '') {
+      const parsedBasis = parseFloat(priceBasis);
+      if (isNaN(parsedBasis) || parsedBasis <= 0) {
+        return res.status(400).json({ success: false, message: 'Price basis must be greater than 0.' });
+      }
+      product.priceBasis = parsedBasis;
+    }
+
+    if (priceBasisUnit && typeof priceBasisUnit === 'string' && priceBasisUnit.trim()) {
+      product.priceBasisUnit = priceBasisUnit.trim();
+    }
+
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Price for "${product.name}" updated to ₹${product.price} per ${product.priceBasisUnit || product.measurementUnit}.`,
       product
     });
   } catch (error) {

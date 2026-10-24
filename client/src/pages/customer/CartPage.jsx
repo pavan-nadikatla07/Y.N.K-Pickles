@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -12,6 +12,159 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import { formatCurrency, formatPriceBasisLabel, formatUnit } from '../../utils/pricing.js';
+
+// Individual Cart Item with manual numeric entry
+const CartItemRow = ({ item, updateQuantity, removeItem, loading }) => {
+  const p = item.product;
+  const isGramUnit = p.measurementUnit === 'g';
+  const increment =
+    p.purchaseIncrement || (isGramUnit ? 100 : p.measurementUnit === 'piece' ? 1 : 0.5);
+  const minQty =
+    p.minPurchaseQty || (isGramUnit ? 100 : p.measurementUnit === 'piece' ? 1 : 0.25);
+
+  const [inputVal, setInputVal] = useState(String(item.quantity));
+  const [rowError, setRowError] = useState('');
+
+  useEffect(() => {
+    setInputVal(String(item.quantity));
+  }, [item.quantity]);
+
+  const handleInputChange = (e) => {
+    const raw = e.target.value;
+    setInputVal(raw);
+
+    if (raw === '') {
+      setRowError('Required');
+      return;
+    }
+
+    const parsed = parseFloat(raw);
+    if (isNaN(parsed) || parsed <= 0) {
+      setRowError('Invalid');
+      return;
+    }
+
+    if (parsed > p.stockQuantity) {
+      setRowError(`Max ${p.stockQuantity}`);
+      return;
+    }
+
+    if (parsed < minQty) {
+      setRowError(`Min ${minQty}`);
+      return;
+    }
+
+    setRowError('');
+    updateQuantity(p._id, parsed);
+  };
+
+  const handleIncrement = () => {
+    const next = Math.round((item.quantity + increment) * 100) / 100;
+    if (next <= p.stockQuantity) {
+      setInputVal(String(next));
+      setRowError('');
+      updateQuantity(p._id, next);
+    }
+  };
+
+  const handleDecrement = () => {
+    const prev = Math.round((item.quantity - increment) * 100) / 100;
+    if (prev >= minQty) {
+      setInputVal(String(prev));
+      setRowError('');
+      updateQuantity(p._id, prev);
+    }
+  };
+
+  return (
+    <div
+      className={`bg-white rounded-3xl border p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition shadow-xs ${
+        item.hasStockIssue ? 'border-amber-300 bg-amber-50/30' : 'border-cream-200'
+      }`}
+    >
+      {/* Product Info */}
+      <div className="flex items-center gap-4 flex-1">
+        <img
+          src={p.imageUrl}
+          alt={p.name}
+          className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover bg-cream-100 shrink-0"
+        />
+        <div>
+          <h3 className="font-display font-bold text-gray-900 text-base leading-snug">
+            {p.name}
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Unit Price:{' '}
+            <span className="font-semibold text-gray-700">
+              {formatPriceBasisLabel(p.price, p.priceBasis, p.priceBasisUnit, p.measurementUnit)}
+            </span>
+          </p>
+
+          {item.hasStockIssue && (
+            <span className="inline-block mt-1 text-[11px] font-bold text-amber-700">
+              ⚠️ {item.stockIssueReason} (Available: {p.stockQuantity} {p.measurementUnit})
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Manual Quantity Controls & Subtotal */}
+      <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-cream-100">
+        {/* Quantity Box with Manual Numeric Input */}
+        <div>
+          <div className="flex items-center gap-1.5 bg-cream-100 rounded-xl p-1 border border-cream-200">
+            <button
+              onClick={handleDecrement}
+              disabled={loading || item.quantity <= minQty}
+              className="w-7 h-7 rounded-lg bg-white text-gray-700 flex items-center justify-center hover:bg-cream-200 disabled:opacity-40 transition shadow-2xs"
+              aria-label="Decrease quantity"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+
+            <div className="flex items-center justify-center px-1">
+              <input
+                type="number"
+                step="any"
+                min="0"
+                value={inputVal}
+                onChange={handleInputChange}
+                className="w-14 text-center font-mono font-bold text-xs bg-transparent border-none focus:outline-none focus:ring-0 text-gray-900"
+              />
+              <span className="text-[11px] font-bold text-gray-500 pr-1">{p.measurementUnit}</span>
+            </div>
+
+            <button
+              onClick={handleIncrement}
+              disabled={loading || item.quantity + increment > p.stockQuantity}
+              className="w-7 h-7 rounded-lg bg-white text-gray-700 flex items-center justify-center hover:bg-cream-200 disabled:opacity-40 transition shadow-2xs"
+              aria-label="Increase quantity"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {rowError && <p className="text-[10px] text-red-600 text-center mt-0.5">{rowError}</p>}
+        </div>
+
+        {/* Subtotal */}
+        <div className="text-right min-w-[90px]">
+          <p className="text-xs text-gray-400">Subtotal</p>
+          <p className="text-base font-black text-gray-900">{formatCurrency(item.subtotal)}</p>
+        </div>
+
+        {/* Remove button */}
+        <button
+          onClick={() => removeItem(p._id)}
+          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition"
+          title="Remove item"
+          aria-label="Remove item"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const CartPage = () => {
   const { cart, grandTotal, hasIssues, issues, updateQuantity, removeItem, clearCart, loading } =
@@ -27,7 +180,7 @@ export const CartPage = () => {
         </div>
         <h2 className="text-2xl font-display font-bold text-gray-900 mb-2">Please Log In</h2>
         <p className="text-sm text-gray-600 mb-6">
-          Log in with your phone number to access your saved cart and place WhatsApp orders.
+          Log in with your phone or email to access your saved cart and place WhatsApp orders.
         </p>
         <div className="space-y-3">
           <Link
@@ -77,7 +230,7 @@ export const CartPage = () => {
             Shopping Cart
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Review your selected pickles and quantities before ordering via WhatsApp.
+            Review your selected pickles, enter decimal quantities, and verify live subtotals before checkout.
           </p>
         </div>
         <button
@@ -103,98 +256,15 @@ export const CartPage = () => {
 
       {/* Items List */}
       <div className="space-y-4 mb-8">
-        {cart.items.map((item) => {
-          const p = item.product;
-          const increment = p.purchaseIncrement || (p.measurementUnit === 'g' ? 100 : 1);
-          const minQty = p.minPurchaseQty || increment;
-          const isStockExceeded = item.quantity > p.stockQuantity;
-
-          return (
-            <div
-              key={p._id}
-              className={`bg-white rounded-3xl border p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition shadow-sm ${
-                item.hasStockIssue ? 'border-amber-300 bg-amber-50/30' : 'border-cream-200'
-              }`}
-            >
-              {/* Product Info */}
-              <div className="flex items-center gap-4 flex-1">
-                <img
-                  src={p.imageUrl}
-                  alt={p.name}
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover bg-cream-100 shrink-0"
-                />
-                <div>
-                  <h3 className="font-display font-bold text-gray-900 text-base leading-snug">
-                    {p.name}
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Unit Price:{' '}
-                    <span className="font-semibold text-gray-700">
-                      {formatPriceBasisLabel(
-                        p.price,
-                        p.priceBasis,
-                        p.priceBasisUnit,
-                        p.measurementUnit
-                      )}
-                    </span>
-                  </p>
-
-                  {item.hasStockIssue && (
-                    <span className="inline-block mt-1 text-[11px] font-bold text-amber-700">
-                      ⚠️ {item.stockIssueReason} (Available: {p.stockQuantity} {p.measurementUnit})
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Quantity Controls & Subtotal */}
-              <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-cream-100">
-                {/* Quantity Box */}
-                <div className="flex items-center gap-2 bg-cream-100 rounded-xl p-1">
-                  <button
-                    onClick={() => updateQuantity(p._id, item.quantity - increment)}
-                    disabled={loading || item.quantity <= minQty}
-                    className="w-7 h-7 rounded-lg bg-white text-gray-700 flex items-center justify-center hover:bg-cream-200 disabled:opacity-40 transition shadow-sm"
-                    aria-label="Decrease quantity"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-
-                  <span className="text-xs font-bold text-gray-900 px-2 font-mono">
-                    {formatUnit(item.quantity, p.measurementUnit)}
-                  </span>
-
-                  <button
-                    onClick={() => updateQuantity(p._id, item.quantity + increment)}
-                    disabled={loading || item.quantity + increment > p.stockQuantity}
-                    className="w-7 h-7 rounded-lg bg-white text-gray-700 flex items-center justify-center hover:bg-cream-200 disabled:opacity-40 transition shadow-sm"
-                    aria-label="Increase quantity"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Subtotal */}
-                <div className="text-right min-w-[90px]">
-                  <p className="text-xs text-gray-400">Subtotal</p>
-                  <p className="text-base font-black text-gray-900">
-                    {formatCurrency(item.subtotal)}
-                  </p>
-                </div>
-
-                {/* Remove button */}
-                <button
-                  onClick={() => removeItem(p._id)}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition"
-                  title="Remove item"
-                  aria-label="Remove item"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
+        {cart.items.map((item) => (
+          <CartItemRow
+            key={item.product._id}
+            item={item}
+            updateQuantity={updateQuantity}
+            removeItem={removeItem}
+            loading={loading}
+          />
+        ))}
       </div>
 
       {/* Cart Summary Card */}
@@ -205,8 +275,21 @@ export const CartPage = () => {
         </div>
 
         <div className="flex items-center justify-between py-3 border-t border-cream-200 text-lg">
-          <span className="font-display font-bold text-gray-900">Estimated Total:</span>
+          <span className="font-display font-bold text-gray-900">Items Subtotal:</span>
           <span className="text-2xl font-black text-olive-800">{formatCurrency(grandTotal)}</span>
+        </div>
+
+        {/* Delivery Logistics Policy Note */}
+        <div className="mt-2 p-3 bg-cream-50 rounded-2xl border border-cream-200 text-xs text-gray-600 flex items-start gap-2.5">
+          <span className="text-base shrink-0">🚚</span>
+          <div>
+            <p className="font-bold text-gray-800">
+              Free Delivery inside Tanuku Circle
+            </p>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              Orders outside Tanuku Circle are charged at ₹10 per km actual road distance from the boundary. Exact delivery charges are calculated at order review.
+            </p>
+          </div>
         </div>
 
         <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">

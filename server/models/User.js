@@ -9,6 +9,15 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: [100, 'Name cannot exceed 100 characters']
     },
+    email: {
+      type: String,
+      required: [true, 'Email address is required'],
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
+      index: true
+    },
     phone: {
       type: String,
       required: [true, 'Phone number is required'],
@@ -25,6 +34,36 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['customer', 'admin'],
       default: 'customer'
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false
+    },
+    savedLocation: {
+      address: {
+        type: String,
+        default: ''
+      },
+      formattedAddress: {
+        type: String,
+        default: ''
+      },
+      placeId: {
+        type: String,
+        default: ''
+      },
+      latitude: {
+        type: Number,
+        default: null
+      },
+      longitude: {
+        type: Number,
+        default: null
+      },
+      isVerified: {
+        type: Boolean,
+        default: false
+      }
     },
     isActive: {
       type: Boolean,

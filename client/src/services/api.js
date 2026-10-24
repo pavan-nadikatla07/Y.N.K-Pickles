@@ -43,12 +43,27 @@ export const api = {
   logout: () => request('/auth/logout', { method: 'POST' }),
   getMe: () => request('/auth/me'),
 
+  // Customer & Admin Profile & Password Management
+  updateProfile: (profileData) => request('/auth/profile', { method: 'PATCH', body: profileData }),
+  requestEmailChangeOtp: (newEmail) => request('/auth/profile/email-otp', { method: 'POST', body: { newEmail } }),
+  requestPasswordChangeOtp: () => request('/auth/password/otp', { method: 'POST' }),
+  changePassword: (data) => request('/auth/password/change', { method: 'POST', body: data }),
+
+  // Password Recovery
+  forgotPassword: (data) => request('/auth/forgot-password', { method: 'POST', body: data }),
+  verifyResetOtp: (data) => request('/auth/verify-reset-otp', { method: 'POST', body: data }),
+  resetPassword: (data) => request('/auth/reset-password', { method: 'POST', body: data }),
+
   // Customer Products
   getProducts: (params = '') => request(`/products${params}`),
   getProductById: (id) => request(`/products/${id}`),
 
   // Public Settings
   getWhatsAppNumber: () => request('/settings/whatsapp'),
+
+  // Logistics & Delivery Pricing
+  getLogisticsQuote: (latitude, longitude, address = '') =>
+    request('/logistics/quote', { method: 'POST', body: { latitude, longitude, address } }),
 
   // Customer Cart
   getCart: () => request('/cart'),
@@ -60,10 +75,15 @@ export const api = {
   // Admin APIs (Protected by backend session & admin role)
   getAdminStats: () => request('/admin/stats'),
   getAdminProducts: (params = '') => request(`/admin/products${params}`),
+  getAdminProductById: (id) => request(`/admin/products/${id}`),
   createProduct: (formData) => request('/admin/products', { method: 'POST', body: formData }),
-  updateProduct: (id, formData) => request(`/admin/products/${id}`, { method: 'PATCH', body: formData }),
+  updateProduct: (id, formDataOrJson) => request(`/admin/products/${id}`, { method: 'PATCH', body: formDataOrJson }),
+  updateProductPrice: (id, priceData) => request(`/admin/products/${id}/price`, { method: 'PATCH', body: priceData }),
   updateStock: (id, stockQuantity) => request(`/admin/products/${id}/stock`, { method: 'PATCH', body: { stockQuantity } }),
   deleteProduct: (id) => request(`/admin/products/${id}`, { method: 'DELETE' }),
   getAdminWhatsApp: () => request('/admin/settings/whatsapp'),
-  updateAdminWhatsApp: (whatsappNumber) => request('/admin/settings/whatsapp', { method: 'PATCH', body: { whatsappNumber } })
+  updateAdminWhatsApp: (whatsappNumber) => request('/admin/settings/whatsapp', { method: 'PATCH', body: { whatsappNumber } }),
+  getAdminEmailSettings: () => request('/admin/settings/email'),
+  updateAdminEmailSettings: (settings) => request('/admin/settings/email', { method: 'PATCH', body: settings }),
+  testAdminEmailSettings: (testData) => request('/admin/settings/email/test', { method: 'POST', body: testData })
 };

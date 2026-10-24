@@ -3,11 +3,26 @@ import { formatCurrency, formatUnit, formatPriceBasisLabel } from './pricing.js'
 /**
  * Builds standard pre-filled order message according to YNK Pickles specifications
  */
-export const buildWhatsAppOrderMessage = ({ customer, items, grandTotal, locationLink }) => {
+export const buildWhatsAppOrderMessage = ({
+  customer,
+  items,
+  grandTotal,
+  subtotal,
+  logistics = null,
+  finalTotal,
+  deliveryAddress = '',
+  locationLink = '',
+  deliveryNotes = ''
+}) => {
   const customerName = customer?.name || 'Valued Customer';
   const customerPhone = customer?.phone || '';
 
-  const header = `Hello YNK Pickles! I would like to place an order.\n\nCUSTOMER DETAILS\nName: ${customerName}\nPhone: ${customerPhone}\n\nORDER ITEMS\n`;
+  const header = `Hello YNK Pickles! I would like to place an order.\n\nCUSTOMER DETAILS\nName: ${customerName}\nPhone: ${customerPhone}\n`;
+
+  let addressSection = '';
+  if (deliveryAddress && deliveryAddress.trim()) {
+    addressSection = `Delivery Address: ${deliveryAddress.trim()}\n`;
+  }
 
   const itemsList = items
     .map((item, index) => {
@@ -25,16 +40,46 @@ export const buildWhatsAppOrderMessage = ({ customer, items, grandTotal, locatio
     })
     .join('\n');
 
-  const totalSection = `\nTOTAL: ${formatCurrency(grandTotal)}\n`;
+  let totalSection = '';
+  if (logistics) {
+    const itemsSubtotalVal = subtotal !== undefined ? subtotal : grandTotal;
+    const computedFinalTotal =
+      finalTotal !== undefined
+        ? finalTotal
+        : itemsSubtotalVal + (logistics.logisticsCharge || 0);
+
+    let logisticsLine = '';
+    if (logistics.isInside) {
+      logisticsLine = `Delivery / Logistics: FREE DELIVERY (Inside Tanuku Circle)`;
+    } else {
+      const dist = logistics.distanceKm ?? 0;
+      const rate = logistics.ratePerKm ?? 10;
+      const charge = logistics.logisticsCharge ?? Math.round(dist * rate);
+      logisticsLine = `Delivery / Logistics: ${formatCurrency(charge)} (${dist} km road distance outside Tanuku Circle @ ₹${rate}/km)`;
+    }
+
+    totalSection = `\nPRICE BREAKDOWN\nItems Subtotal: ${formatCurrency(itemsSubtotalVal)}\n${logisticsLine}\nFINAL TOTAL: ${formatCurrency(computedFinalTotal)}\nTOTAL: ${formatCurrency(computedFinalTotal)}\n`;
+  } else {
+    totalSection = `\nTOTAL: ${formatCurrency(grandTotal)}\n`;
+  }
 
   let locationSection = '';
-  if (locationLink && typeof locationLink === 'string' && locationLink.startsWith('https://www.google.com/maps')) {
+  if (
+    locationLink &&
+    typeof locationLink === 'string' &&
+    locationLink.startsWith('https://www.google.com/maps')
+  ) {
     locationSection = `\nCUSTOMER LOCATION:\n${locationLink}\n`;
+  }
+
+  let notesSection = '';
+  if (deliveryNotes && deliveryNotes.trim()) {
+    notesSection = `\nDelivery Notes: ${deliveryNotes.trim()}\n`;
   }
 
   const footer = `\nPlease confirm the availability and delivery details for my order.\n\nThank you!`;
 
-  return `${header}${itemsList}${totalSection}${locationSection}${footer}`;
+  return `${header}${addressSection}\nORDER ITEMS\n${itemsList}${totalSection}${locationSection}${notesSection}${footer}`;
 };
 
 /**

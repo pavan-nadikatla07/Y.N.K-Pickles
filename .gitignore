@@ -7,18 +7,26 @@ node_modules/
 dist/
 build/
 
-# Local Environment files
+# Local Environment & Secrets files (Never commit secrets to git)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+*.env
+*.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+*.cert
+*.crt
+credentials.json
+client-secret*.json
 
 # Server uploads
 server/uploads/*
 !server/uploads/.gitkeep
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

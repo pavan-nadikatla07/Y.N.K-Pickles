@@ -4,12 +4,14 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import path from 'path';
+import mongoose from 'mongoose';
 
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import logisticsRoutes from './routes/logisticsRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -58,22 +60,47 @@ if (process.env.NODE_ENV !== 'test') {
 const uploadDir = path.resolve(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadDir));
 
-// API health check
+// API health check (Monitors server and MongoDB readyState)
 app.get('/api/v1/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
+  const isDbReady = mongoose.connection.readyState === 1;
+  const dbStatus =
+    mongoose.connection.readyState === 1
+      ? 'connected'
+      : mongoose.connection.readyState === 2
+      ? 'connecting'
+      : 'disconnected';
+
+  res.status(isDbReady ? 200 : 503).json({
+    status: isDbReady ? 'healthy' : 'degraded',
+    database: {
+      status: dbStatus,
+      readyState: mongoose.connection.readyState,
+      name: mongoose.connection.name || 'ynk_pickles'
+    },
     timestamp: new Date().toISOString(),
     service: 'YNK Pickles API',
     uptime: process.uptime()
   });
 });
 
-// Mount versioned API routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/products', productRoutes);
-app.use('/api/v1/cart', cartRoutes);
-app.use('/api/v1/settings', settingsRoutes);
-app.use('/api/v1/admin', adminRoutes);
+// Middleware: Guard database-dependent API endpoints against broken connections
+const requireDbReady = (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database connection is temporarily unavailable. Please retry shortly.'
+    });
+  }
+  next();
+};
+
+// Mount versioned API routes with database readiness check
+app.use('/api/v1/auth', requireDbReady, authRoutes);
+app.use('/api/v1/products', requireDbReady, productRoutes);
+app.use('/api/v1/cart', requireDbReady, cartRoutes);
+app.use('/api/v1/settings', requireDbReady, settingsRoutes);
+app.use('/api/v1/admin', requireDbReady, adminRoutes);
+app.use('/api/v1/logistics', logisticsRoutes);
 
 // Catch 404 for unhandled API routes
 app.use('/api', (req, res) => {
